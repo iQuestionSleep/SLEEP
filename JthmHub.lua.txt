@@ -1,0 +1,203 @@
+-- ZHub Library for Roblox
+local ZHub = {}
+
+-- Function to create the main window
+function ZHub:CreateWindow(settings)
+    local UserInputService = game:GetService("UserInputService")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+
+    -- Create ScreenGui
+    local gui = Instance.new("ScreenGui")
+    gui.Name = settings.Name or "ZHub"
+    gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    gui.Enabled = true -- Ensure it's visible
+
+    -- Main Frame
+    local windowFrame = Instance.new("Frame", gui)
+    windowFrame.Size = UDim2.new(0, 600, 0, 400)
+    windowFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    windowFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    windowFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Dark background
+    windowFrame.BorderSizePixel = 0
+
+    -- Rounded Corners for Main Frame
+    local windowCorner = Instance.new("UICorner", windowFrame)
+    windowCorner.CornerRadius = UDim.new(0, 10)
+
+    -- Title Bar
+    local titleBar = Instance.new("Frame", windowFrame)
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
+    titleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20) -- Darker title bar
+    titleBar.BorderSizePixel = 0
+
+    -- Shiny Gradient Effect for Title Bar
+    local titleGradient = Instance.new("UIGradient", titleBar)
+    titleGradient.Rotation = 90
+    titleGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)), -- Top shine
+        ColorSequenceKeypoint.new(0.3, Color3.fromRGB(20, 20, 20)), -- Mid transition
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 20)) -- Bottom solid color
+    })
+
+    -- Title Label
+    local titleLabel = Instance.new("TextLabel", titleBar)
+    titleLabel.Size = UDim2.new(1, -40, 1, 0)
+    titleLabel.Position = UDim2.new(0, 10, 0, 0)
+    titleLabel.Text = settings.Name or "ZHub"
+    titleLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextSize = 18
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Close Button
+    local closeButton = Instance.new("TextButton", titleBar)
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Position = UDim2.new(1, -30, 0, 5)
+    closeButton.Text = "X"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.TextSize = 14
+    closeButton.BackgroundColor3 = Color3.fromRGB(232, 17, 35)
+    closeButton.BorderSizePixel = 0
+    closeButton.MouseButton1Click:Connect(function()
+        gui:Destroy()
+    end)
+
+    -- Draggable Functionality
+    local isDragging, dragStart, startPos
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isDragging = true
+            dragStart = input.Position
+            startPos = windowFrame.Position
+        end
+    end)
+
+    titleBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isDragging = false
+        end
+    end)
+
+    titleBar.InputChanged:Connect(function(input)
+        if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            windowFrame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    -- Tab Container
+    local tabContainer = Instance.new("Frame", windowFrame)
+    tabContainer.Size = UDim2.new(0, 150, 1, -40)
+    tabContainer.Position = UDim2.new(0, 0, 0, 40)
+    tabContainer.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    tabContainer.BorderSizePixel = 0
+
+    local tabButtonLayout = Instance.new("UIListLayout", tabContainer)
+    tabButtonLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    tabButtonLayout.Padding = UDim.new(0, 5)
+
+    -- Tab Content
+    local tabContent = Instance.new("Frame", windowFrame)
+    tabContent.Size = UDim2.new(1, -150, 1, -40)
+    tabContent.Position = UDim2.new(0, 150, 0, 40)
+    tabContent.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    tabContent.BorderSizePixel = 0
+
+    local tabs = {}
+
+    -- Create Tab Function
+    function ZHub:CreateTab(tabName)
+        local tabButton = Instance.new("TextButton", tabContainer)
+        tabButton.Size = UDim2.new(1, 0, 0, 40)
+        tabButton.Text = tabName
+        tabButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+        tabButton.Font = Enum.Font.Gotham
+        tabButton.TextSize = 14
+        tabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        tabButton.BorderSizePixel = 0
+
+        local tabPage = Instance.new("ScrollingFrame", tabContent)
+        tabPage.Size = UDim2.new(1, 0, 1, 0)
+        tabPage.CanvasSize = UDim2.new(0, 0, 0, 0)
+        tabPage.ScrollBarThickness = 5
+        tabPage.ScrollBarImageColor3 = Color3.fromRGB(70, 70, 70)
+        tabPage.Visible = #tabs == 0 -- Make the first tab visible by default
+
+        local tabPageLayout = Instance.new("UIListLayout", tabPage)
+        tabPageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        tabPageLayout.Padding = UDim.new(0, 10)
+
+        tabButton.MouseButton1Click:Connect(function()
+            for _, page in pairs(tabs) do
+                page.Visible = false
+            end
+            tabPage.Visible = true
+
+            -- Update tab button colors
+            for _, button in ipairs(tabContainer:GetChildren()) do
+                if button:IsA("TextButton") then
+                    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                end
+            end
+            tabButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        end)
+
+        tabs[tabName] = tabPage
+        return tabPage
+    end
+
+    -- Create Section Function
+    function ZHub:CreateSection(tabPage, sectionName)
+        local sectionFrame = Instance.new("Frame", tabPage)
+        sectionFrame.Size = UDim2.new(1, -20, 0, 50)
+        sectionFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        sectionFrame.BorderSizePixel = 0
+
+        local sectionCorner = Instance.new("UICorner", sectionFrame)
+        sectionCorner.CornerRadius = UDim.new(0, 10)
+
+        local sectionLabel = Instance.new("TextLabel", sectionFrame)
+        sectionLabel.Text = sectionName
+        sectionLabel.Font = Enum.Font.GothamBold
+        sectionLabel.TextSize = 16
+        sectionLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+        sectionLabel.Size = UDim2.new(1, -10, 0, 30)
+        sectionLabel.Position = UDim2.new(0, 10, 0, 10)
+        sectionLabel.BackgroundTransparency = 1
+        sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+        return sectionFrame
+    end
+
+    -- Create Button Function
+    function ZHub:CreateButton(section, buttonText, callback)
+        local button = Instance.new("TextButton", section)
+        button.Size = UDim2.new(1, -20, 0, 40)
+        button.Position = UDim2.new(0, 10, 0, 40)
+        button.Text = buttonText
+        button.TextColor3 = Color3.fromRGB(240, 240, 240)
+        button.Font = Enum.Font.Gotham
+        button.TextSize = 14
+        button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        button.MouseButton1Click:Connect(callback)
+    end
+
+    -- Keybind to toggle visibility
+    UserInputService.InputBegan:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.K then
+            gui.Enabled = not gui.Enabled
+        end
+    end)
+
+    return ZHub
+end
+
+return ZHub
